@@ -12,6 +12,8 @@
   <version>Tag</version>
 </dependency>
 ```
+[![](https://jitpack.io/v/NguyenPhucAnhKhoi/ConfigCore.svg)](https://jitpack.io/#NguyenPhucAnhKhoi/ConfigCore)
+
 # Example
 > How to use config core ?
 ```
@@ -31,4 +33,3 @@ ItemStack stack = file.getObject("path", ItemStack.class);
 //Reload the config
  file.reload();
 ```
-[![](https://jitpack.io/v/NguyenPhucAnhKhoi/ConfigCore.svg)](https://jitpack.io/#NguyenPhucAnhKhoi/ConfigCore)
