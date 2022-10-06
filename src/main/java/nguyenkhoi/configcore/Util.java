@@ -4,6 +4,12 @@ import java.util.List;
 
 public class Util {
 
+    /**
+     * Get min edit distance of 2 string
+     * @param source the source string
+     * @param target the target string
+     * @return the min edit distance value
+     */
     protected static int getStringDistance(String source, String target) {
         int[][] map = new int[source.length() + 1][target.length() + 1];
         for (int i = 0; i <= source.length(); i++) {
@@ -21,6 +27,11 @@ public class Util {
         return map[source.length()][target.length()];
     }
 
+    /**
+     * Get min value of list integer
+     * @param numbers the list integer to compare
+     * @return the min value in list
+     */
     protected static int min(int... numbers) {
         int min = numbers[0];
         for (int i : numbers) {
@@ -29,6 +40,12 @@ public class Util {
         return min;
     }
 
+    /**
+     * Get the closest string of target if not found the equal
+     * @param target the string to match
+     * @param strings the list string to find
+     * @return the closest string
+     */
     protected static String matchString(String target, List<String> strings) {
         boolean e = false;
         boolean i = false;

@@ -88,8 +88,27 @@ public class FileConfig {
     }
 
     /**
+     * Get the mode of auto match path
+     * @return true or false
+     */
+
+    public boolean isAutoMatch() {
+        return data.getAutoMatch();
+    }
+
+    /**
+     * Set the mode of auto match path
+     * @param value true or false
+     */
+
+    public void setAutoMatch(boolean value) {
+        data.setAutoMatch(value);
+    }
+
+    /**
      * Load source file for this storage
      */
+
     private void loadFile() {
         try {
             file = new File(filePath);
