@@ -1,5 +1,6 @@
 package nguyenkhoi.configcore;
 
+import org.bukkit.Bukkit;
 import java.util.List;
 
 public class Util {
@@ -66,5 +67,16 @@ public class Util {
             }
         }
         return out;
+    }
+
+    /**
+     * Get nms version of server
+     * @return the version of server
+     */
+    public static int getVersion() {
+        String v = Bukkit.getServer().getClass().getPackage().getName();
+        v = v.substring(v.lastIndexOf(".") + 1).replace("v", "").trim();
+        final String[] versionDetails = v.split("_");
+        return Integer.parseInt(versionDetails[1]);
     }
 }

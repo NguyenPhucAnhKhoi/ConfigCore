@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static nguyenkhoi.configcore.Util.getVersion;
 import static org.bukkit.util.NumberConversions.*;
 
 @SuppressWarnings("unused")
@@ -149,8 +150,18 @@ public class FileConfig {
      * @return contain or not
      */
     
-    public boolean contain(String path) {
+    public boolean contains(String path) {
         return paths.contains(path);
+    }
+
+    /**
+     * Create the Configuration Section of this config
+     * @param path the path to the section
+     * @return the section
+     */
+    
+    public ConfigurationSection createConfigurationSection(String path) {
+        return config.createSection(path);
     }
 
     /**
@@ -158,9 +169,9 @@ public class FileConfig {
      * @param path the path to the section
      * @return the section
      */
-    
-    public ConfigurationSection getSection(String path) {
-        return config.createSection(path);
+
+    public ConfigurationSection getConfigurationSection(String path) {
+        return config.getConfigurationSection(path);
     }
 
     /**
@@ -316,7 +327,8 @@ public class FileConfig {
      */
     
     public List<String> getComments(String path) {
-        return config.getComments(path);
+        if (getVersion() >= 13) return config.getComments(path);
+        return new ArrayList<>();
     }
 
     /**
@@ -405,7 +417,8 @@ public class FileConfig {
      */
     
     public List<String> getInLineComments(String path) {
-        return config.getInlineComments(path);
+        if (getVersion() >= 13) return config.getInlineComments(path);
+        return new ArrayList<>();
     }
 
     /**
@@ -664,11 +677,10 @@ public class FileConfig {
      * @param path the path of value
      * @return value store in path
      */
-    @Nullable
     
     public String getString(String path) {
         Object def = get(path);
-        return getString(path, def != null ? def.toString() : null);
+        return getString(path, def != null ? def.toString() : "");
     }
 
     /**
@@ -864,7 +876,7 @@ public class FileConfig {
      */
     
     public void setComments(String path, List<String> comments) {
-        config.setComments(path, comments);
+        if (getVersion() >= 13) config.setComments(path, comments);
     }
 
     /**
@@ -874,7 +886,7 @@ public class FileConfig {
      */
     
     public void setInlineComments(String path, List<String> comments) {
-        config.setComments(path, comments);
+        if (getVersion() >= 13) config.setComments(path, comments);
     }
 
     /**
