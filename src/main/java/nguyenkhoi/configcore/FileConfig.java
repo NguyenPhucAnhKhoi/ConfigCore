@@ -894,4 +894,14 @@ public class FileConfig {
             data.put(s, config.get(s));
         }
     }
+
+    /**
+     * Save the config file and this storage
+     */
+
+    public void save() {
+        try {
+            config.save(file);
+        } catch (IOException ignored) {}
+    }
 }
