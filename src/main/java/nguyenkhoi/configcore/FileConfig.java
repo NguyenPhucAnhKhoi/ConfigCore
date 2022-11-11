@@ -1,5 +1,6 @@
 package nguyenkhoi.configcore;
 
+import org.apache.commons.io.FileUtils;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -11,6 +12,7 @@ import org.bukkit.util.Vector;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 import static nguyenkhoi.configcore.Util.getVersion;
@@ -42,6 +44,11 @@ public class FileConfig {
      * List of all paths this config has
      */
     private List<String> paths;
+
+    /**
+     * InputStream to create file
+     */
+    private final InputStream stream;
 
     /**
      * Get the Yaml File this class represent
@@ -77,6 +84,14 @@ public class FileConfig {
     
     public File getFile() {
         return file;
+    }
+
+    /**
+     * Get the input stream represent this storage
+     * @return Input stream
+     */
+    public InputStream getStream() {
+        return this.stream;
     }
 
     /**
@@ -118,6 +133,7 @@ public class FileConfig {
             } else {
                 if (!file.exists() && !file.createNewFile()) throw new IOException("Can not create the config file");
             }
+            FileUtils.copyInputStreamToFile(stream, file);
         } catch (Exception e) {
             file = null;
         }
@@ -125,10 +141,39 @@ public class FileConfig {
 
     /**
      * Construct this class to represent Yaml File
-     * @param filePath the path to file
+     * @param filePath the path to create file
+     * @param stream input stream to create file if it
+     *               not exists
      */
     
+    public FileConfig(String filePath, InputStream stream) {
+        this.filePath = filePath;
+        this.stream = stream;
+        loadFile();
+        config = new YamlConfiguration();
+        try {
+            config.load(file);
+        } catch (Exception ignored) {
+            file = null;
+        }
+        Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
+        paths = new ArrayList<>(set);
+        for (String s : paths) {
+            data.put(s, config.get(s));
+        }
+    }
+
+    /**
+     * Construct this class to represent Yaml File
+     * @param filePath the path to create file
+     */
     public FileConfig(String filePath) {
+        this.stream = new InputStream() {
+            @Override
+            public int read() {
+                return -1;
+            }
+        };
         this.filePath = filePath;
         loadFile();
         config = new YamlConfiguration();
