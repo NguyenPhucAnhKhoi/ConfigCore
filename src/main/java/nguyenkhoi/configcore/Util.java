@@ -47,7 +47,7 @@ public class Util {
      * @param strings the list string to find
      * @return the closest string
      */
-    protected static String matchString(String target, List<String> strings) {
+    public static String matchString(String target, List<String> strings) {
         boolean e = false;
         boolean i = false;
         int min = getStringDistance(strings.get(0), target);
