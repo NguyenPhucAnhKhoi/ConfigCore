@@ -190,6 +190,29 @@ public class FileConfig {
     }
 
     /**
+     * Construct this class to represent Yaml File
+     * @param file the file to create config
+     */
+    public FileConfig(File file) {
+        this.stream = new InputStream() {
+            @Override
+            public int read() {
+                return -1;
+            }
+        };
+        this.filePath = file.toString();
+        this.file = file;
+        try {
+            config.load(file);
+        } catch (Exception ignored) {}
+        Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
+        paths = new ArrayList<>(set);
+        for (String s : paths) {
+            data.put(s, config.get(s));
+        }
+    }
+
+    /**
      * Check if this config contains a path or not
      * @param path the path to check
      * @return contain or not
