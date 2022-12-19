@@ -19,7 +19,7 @@ import static nguyenkhoi.configcore.Util.getVersion;
 import static org.bukkit.util.NumberConversions.*;
 
 @SuppressWarnings("unused")
-public class FileConfig {
+public abstract class FileConfig implements FileTask {
     /**
      * The hash map store all data of this class
      */
@@ -127,6 +127,7 @@ public class FileConfig {
 
     private void loadFile() {
         try {
+            this.runBefore();
             file = new File(filePath);
             if (file.getParentFile() != null && !file.getParentFile().exists()) {
                 if (!file.getParentFile().mkdirs()) throw new IOException("Can not create the config parent file");
@@ -134,6 +135,7 @@ public class FileConfig {
                 if (!file.exists() && !file.createNewFile()) throw new IOException("Can not create the config file");
             }
             FileUtils.copyInputStreamToFile(stream, file);
+            this.runAfter();
         } catch (Exception e) {
             file = null;
         }

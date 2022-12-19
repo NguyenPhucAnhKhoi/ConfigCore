@@ -41,6 +41,14 @@ public class Util {
         return min;
     }
 
+    protected static int diff(String string, String target) {
+        int out = 0;
+        for (int i = 0; i < i + string.length(); i++) {
+            if (string.charAt(i) != target.charAt(i)) out = out + 1;
+        }
+        return out;
+    }
+
     /**
      * Get the closest string of target if not found the equal
      * @param target the string to match
@@ -54,11 +62,10 @@ public class Util {
         String out = strings.get(0);
         for (String s : strings) {
             if (s.equals(target)) {
-                out = s;
-                e = true;
+                return s;
             }
             else if (s.equalsIgnoreCase(target) && !e) {
-                out = s;
+                if (diff(s, target) < min) out = s;
                 i = true;
             }
             else if (getStringDistance(s, target) < min && !i && !e) {
