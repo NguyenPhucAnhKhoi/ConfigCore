@@ -19,7 +19,7 @@ import static nguyenkhoi.configcore.Util.getVersion;
 import static org.bukkit.util.NumberConversions.*;
 
 @SuppressWarnings("unused")
-public abstract class FileConfig implements FileTask {
+public class FileConfig implements FileTask {
     /**
      * The hash map store all data of this class
      */
