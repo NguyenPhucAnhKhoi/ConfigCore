@@ -135,7 +135,7 @@ public abstract class FileConfig implements FileTask {
                 if (!file.exists() && !file.createNewFile()) throw new IOException("Can not create the config file");
             }
             FileUtils.copyInputStreamToFile(stream, file);
-            this.runAfter();
+            this.runAfter(file);
         } catch (Exception e) {
             file = null;
         }
@@ -147,7 +147,6 @@ public abstract class FileConfig implements FileTask {
      * @param stream input stream to create file if it
      *               not exists
      */
-    
     public FileConfig(String filePath, InputStream stream) {
         this.filePath = filePath;
         this.stream = stream;
@@ -163,6 +162,7 @@ public abstract class FileConfig implements FileTask {
         for (String s : paths) {
             data.put(s, config.get(s));
         }
+        this.runFinal();
     }
 
     /**
@@ -189,6 +189,7 @@ public abstract class FileConfig implements FileTask {
         for (String s : paths) {
             data.put(s, config.get(s));
         }
+        this.runFinal();
     }
 
     /**
@@ -212,6 +213,7 @@ public abstract class FileConfig implements FileTask {
         for (String s : paths) {
             data.put(s, config.get(s));
         }
+        this.runFinal();
     }
 
     /**
