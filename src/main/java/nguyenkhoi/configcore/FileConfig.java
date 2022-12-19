@@ -19,7 +19,7 @@ import static nguyenkhoi.configcore.Util.getVersion;
 import static org.bukkit.util.NumberConversions.*;
 
 @SuppressWarnings("unused")
-public class FileConfig implements FileTask {
+public class FileConfig implements FileConfigTask {
     /**
      * The hash map store all data of this class
      */
@@ -166,6 +166,7 @@ public class FileConfig implements FileTask {
         this.runFinal();
         this.runFinal(file);
         this.runFinal(config);
+        this.runFinal(this);
     }
 
     /**
