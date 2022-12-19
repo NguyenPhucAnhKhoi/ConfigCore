@@ -135,6 +135,7 @@ public class FileConfig implements FileTask {
                 if (!file.exists() && !file.createNewFile()) throw new IOException("Can not create the config file");
             }
             FileUtils.copyInputStreamToFile(stream, file);
+            this.runAfter();
             this.runAfter(file);
         } catch (Exception e) {
             file = null;
@@ -163,6 +164,8 @@ public class FileConfig implements FileTask {
             data.put(s, config.get(s));
         }
         this.runFinal();
+        this.runFinal(file);
+        this.runFinal(config);
     }
 
     /**
@@ -170,26 +173,12 @@ public class FileConfig implements FileTask {
      * @param filePath the path to create file
      */
     public FileConfig(String filePath) {
-        this.stream = new InputStream() {
+        this(filePath, new InputStream() {
             @Override
             public int read() {
                 return -1;
             }
-        };
-        this.filePath = filePath;
-        loadFile();
-        config = new YamlConfiguration();
-        try {
-            config.load(file);
-        } catch (Exception ignored) {
-            file = null;
-        }
-        Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
-        paths = new ArrayList<>(set);
-        for (String s : paths) {
-            data.put(s, config.get(s));
-        }
-        this.runFinal();
+        });
     }
 
     /**
@@ -197,23 +186,7 @@ public class FileConfig implements FileTask {
      * @param file the file to create config
      */
     public FileConfig(File file) {
-        this.stream = new InputStream() {
-            @Override
-            public int read() {
-                return -1;
-            }
-        };
-        this.filePath = file.toString();
-        this.file = file;
-        try {
-            config.load(file);
-        } catch (Exception ignored) {}
-        Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
-        paths = new ArrayList<>(set);
-        for (String s : paths) {
-            data.put(s, config.get(s));
-        }
-        this.runFinal();
+        this(file.getPath());
     }
 
     /**
