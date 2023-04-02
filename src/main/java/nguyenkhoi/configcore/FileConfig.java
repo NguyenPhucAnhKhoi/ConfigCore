@@ -7,6 +7,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.*;
 import org.bukkit.configuration.file.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
 import javax.annotation.Nullable;
@@ -44,9 +45,14 @@ public class FileConfig {
     private List<String> paths;
 
     /**
-     * ByteArrayOutputStream to create file
+     * Plugin this config holder to create file
      */
-    private final ByteArrayOutputStream outstream;
+    private final JavaPlugin plugin;
+
+    /**
+     * Name of the resources to load from resources
+     */
+    private final String name;
 
     /**
      * Get the Yaml File this class represent
@@ -89,7 +95,7 @@ public class FileConfig {
      * @return Input stream
      */
     public InputStream getStream() {
-        return new ByteArrayInputStream(this.outstream.toByteArray());
+        return this.plugin.getResource(name);
     }
 
     /**
@@ -144,25 +150,13 @@ public class FileConfig {
     /**
      * Construct this class to represent Yaml File
      * @param filePath the path to create file
-     * @param stream input stream to create file if it
-     *               not exists
+     * @param fileName the name of resources file
+     * @param plugin the plugin this config holder
      */
-    public FileConfig(String filePath, InputStream stream) {
-        ByteArrayOutputStream outstream1;
+    public FileConfig(String filePath, String fileName, JavaPlugin plugin) {
         this.filePath = filePath;
-        try {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = stream.read(buffer)) > -1 ) {
-                byteArrayOutputStream.write(buffer, 0, len);
-            }
-            byteArrayOutputStream.flush();
-            outstream1 = byteArrayOutputStream;
-        } catch (Exception e) {
-            outstream1 = null;
-        }
-        this.outstream = outstream1;
+        this.plugin = plugin;
+        this.name = fileName;
         loadFile();
         config = new YamlConfiguration();
         try {
@@ -175,27 +169,6 @@ public class FileConfig {
         for (String s : paths) {
             data.put(s, config.get(s));
         }
-    }
-
-    /**
-     * Construct this class to represent Yaml File
-     * @param filePath the path to create file
-     */
-    public FileConfig(String filePath) {
-        this(filePath, new InputStream() {
-            @Override
-            public int read() {
-                return -1;
-            }
-        });
-    }
-
-    /**
-     * Construct this class to represent Yaml File
-     * @param file the file to create config
-     */
-    public FileConfig(File file) {
-        this(file.getPath());
     }
 
     /**
