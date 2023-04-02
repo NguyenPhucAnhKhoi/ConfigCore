@@ -19,7 +19,7 @@ import static nguyenkhoi.configcore.Util.getVersion;
 import static org.bukkit.util.NumberConversions.*;
 
 @SuppressWarnings("unused")
-public class FileConfig implements FileConfigTask {
+public class FileConfig {
     /**
      * The hash map store all data of this class
      */
@@ -126,23 +126,16 @@ public class FileConfig implements FileConfigTask {
      */
     private void loadFile() {
         try {
-            this.runBefore();
             file = new File(filePath);
             if (!file.getParentFile().exists()) {
                 if (!file.getParentFile().mkdirs()) throw new IOException("Can not create the config parent file");
                 if (!file.createNewFile()) throw new IOException("Can not create the config file");
-                else {
-                    runIfCreate();
-                    runIfCreate(file);
-                }
             } else {
                 if (!file.exists()) {
                     if (!file.createNewFile()) throw new IOException("Can not create the config file");
                 }
             }
             FileUtils.copyInputStreamToFile(stream, file);
-            this.runAfter();
-            this.runAfter(file);
         } catch (Exception e) {
             file = null;
         }
@@ -169,10 +162,6 @@ public class FileConfig implements FileConfigTask {
         for (String s : paths) {
             data.put(s, config.get(s));
         }
-        this.runFinal();
-        this.runFinal(file);
-        this.runFinal(config);
-        this.runFinal(this);
     }
 
     /**
