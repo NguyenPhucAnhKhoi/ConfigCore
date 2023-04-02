@@ -10,9 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import javax.annotation.Nullable;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 
 import static nguyenkhoi.configcore.Util.getVersion;
@@ -46,9 +44,9 @@ public class FileConfig {
     private List<String> paths;
 
     /**
-     * InputStream to create file
+     * ByteArrayOutputStream to create file
      */
-    private final InputStream stream;
+    private final ByteArrayOutputStream outstream;
 
     /**
      * Get the Yaml File this class represent
@@ -91,7 +89,7 @@ public class FileConfig {
      * @return Input stream
      */
     public InputStream getStream() {
-        return this.stream;
+        return new ByteArrayInputStream(this.outstream.toByteArray());
     }
 
     /**
@@ -130,11 +128,11 @@ public class FileConfig {
             if (!file.getParentFile().exists()) {
                 if (!file.getParentFile().mkdirs()) throw new IOException("Can not create the config parent file");
                 if (!file.createNewFile()) throw new IOException("Can not create the config file");
-                else FileUtils.copyInputStreamToFile(stream, file);
+                else FileUtils.copyInputStreamToFile(getStream(), file);
             } else {
                 if (!file.exists()) {
                     if (!file.createNewFile()) throw new IOException("Can not create the config file");
-                    else FileUtils.copyInputStreamToFile(stream, file);
+                    else FileUtils.copyInputStreamToFile(getStream(), file);
                 }
             }
         } catch (Exception e) {
@@ -150,8 +148,21 @@ public class FileConfig {
      *               not exists
      */
     public FileConfig(String filePath, InputStream stream) {
+        ByteArrayOutputStream outstream1;
         this.filePath = filePath;
-        this.stream = stream;
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = stream.read(buffer)) > -1 ) {
+                byteArrayOutputStream.write(buffer, 0, len);
+            }
+            byteArrayOutputStream.flush();
+            outstream1 = byteArrayOutputStream;
+        } catch (Exception e) {
+            outstream1 = null;
+        }
+        this.outstream = outstream1;
         loadFile();
         config = new YamlConfiguration();
         try {
