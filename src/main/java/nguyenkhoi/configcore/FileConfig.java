@@ -137,6 +137,7 @@ public class FileConfig {
             }
             FileUtils.copyInputStreamToFile(stream, file);
         } catch (Exception e) {
+            e.printStackTrace();
             file = null;
         }
     }
