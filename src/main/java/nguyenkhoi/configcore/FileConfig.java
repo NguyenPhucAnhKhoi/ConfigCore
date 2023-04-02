@@ -124,15 +124,21 @@ public class FileConfig implements FileConfigTask {
     /**
      * Load source file for this storage
      */
-
     private void loadFile() {
         try {
             this.runBefore();
             file = new File(filePath);
-            if (file.getParentFile() != null && !file.getParentFile().exists()) {
+            if (!file.getParentFile().exists()) {
                 if (!file.getParentFile().mkdirs()) throw new IOException("Can not create the config parent file");
+                if (!file.createNewFile()) throw new IOException("Can not create the config file");
+                else {
+                    runIfCreate();
+                    runIfCreate(file);
+                }
             } else {
-                if (!file.exists() && !file.createNewFile()) throw new IOException("Can not create the config file");
+                if (!file.exists()) {
+                    if (!file.createNewFile()) throw new IOException("Can not create the config file");
+                }
             }
             FileUtils.copyInputStreamToFile(stream, file);
             this.runAfter();
