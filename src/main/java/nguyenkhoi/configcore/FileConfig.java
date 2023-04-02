@@ -130,12 +130,13 @@ public class FileConfig {
             if (!file.getParentFile().exists()) {
                 if (!file.getParentFile().mkdirs()) throw new IOException("Can not create the config parent file");
                 if (!file.createNewFile()) throw new IOException("Can not create the config file");
+                else FileUtils.copyInputStreamToFile(stream, file);
             } else {
                 if (!file.exists()) {
                     if (!file.createNewFile()) throw new IOException("Can not create the config file");
+                    else FileUtils.copyInputStreamToFile(stream, file);
                 }
             }
-            FileUtils.copyInputStreamToFile(stream, file);
         } catch (Exception e) {
             e.printStackTrace();
             file = null;
