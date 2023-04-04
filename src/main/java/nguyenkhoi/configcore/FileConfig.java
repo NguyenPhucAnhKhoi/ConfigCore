@@ -1,9 +1,6 @@
 package nguyenkhoi.configcore;
 
-import org.apache.commons.io.FileUtils;
-import org.bukkit.Color;
-import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.*;
 import org.bukkit.configuration.*;
 import org.bukkit.configuration.file.*;
 import org.bukkit.inventory.ItemStack;
@@ -13,8 +10,11 @@ import org.bukkit.util.Vector;
 import javax.annotation.Nullable;
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static nguyenkhoi.configcore.Util.getVersion;
+import static org.bukkit.ChatColor.COLOR_CHAR;
 import static org.bukkit.util.NumberConversions.*;
 
 @SuppressWarnings("unused")
@@ -37,7 +37,7 @@ public class FileConfig {
     /**
      * The path of source file
      */
-    private final String filePath;
+    private final String fileName;
 
     /**
      * List of all paths this config has
@@ -52,7 +52,7 @@ public class FileConfig {
     /**
      * Name of the resources to load from resources
      */
-    private final String name;
+    private final String resourceName;
 
     /**
      * Get the Yaml File this class represent
@@ -95,7 +95,7 @@ public class FileConfig {
      * @return Input stream
      */
     public InputStream getStream() {
-        return this.plugin.getResource(name);
+        return this.plugin.getResource(resourceName);
     }
 
     /**
@@ -104,7 +104,7 @@ public class FileConfig {
      */
     
     public String getFilePath() {
-        return filePath;
+        return new File(plugin.getDataFolder(), fileName).getPath();
     }
 
     /**
@@ -125,21 +125,43 @@ public class FileConfig {
         data.setAutoMatch(value);
     }
 
+    private static String translateHexColorCodes(String message) {
+        final Pattern hexPattern = Pattern.compile("&#" + "([A-Fa-f0-9]{6})" + "");
+        Matcher matcher = hexPattern.matcher(message);
+        StringBuffer buffer = new StringBuffer(message.length() + 4 * 8);
+        while (matcher.find()) {
+            String group = matcher.group(1);
+            matcher.appendReplacement(buffer, COLOR_CHAR + "x" + COLOR_CHAR + group.charAt(0) + COLOR_CHAR + group.charAt(1) + COLOR_CHAR
+                    + group.charAt(2) + COLOR_CHAR + group.charAt(3) + COLOR_CHAR + group.charAt(4) + COLOR_CHAR + group.charAt(5));
+
+        }
+        return matcher.appendTail(buffer).toString();
+    }
+
+    private static String colorize(String input) {
+        input = ChatColor.translateAlternateColorCodes('&', input);
+        if (getVersion() >= 16) {
+            input = translateHexColorCodes(input);
+        }
+        return input;
+    }
+
+    private void log(String message) {
+        Bukkit.getConsoleSender().sendMessage(colorize(message));
+    }
+
     /**
      * Load source file for this storage
      */
     private void loadFile() {
         try {
-            file = new File(filePath);
-            if (!file.getParentFile().exists()) {
-                if (!file.getParentFile().mkdirs()) throw new IOException("Can not create the config parent file");
-                if (!file.createNewFile()) throw new IOException("Can not create the config file");
-                else FileUtils.copyInputStreamToFile(getStream(), file);
-            } else {
-                if (!file.exists()) {
-                    if (!file.createNewFile()) throw new IOException("Can not create the config file");
-                    else FileUtils.copyInputStreamToFile(getStream(), file);
-                }
+            File folder = plugin.getDataFolder();
+            if (!folder.exists()) {
+                if (folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
+            }
+            file = new File(folder, fileName);
+            if (!file.exists()) {
+                plugin.saveResource(resourceName, false);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -149,14 +171,14 @@ public class FileConfig {
 
     /**
      * Construct this class to represent Yaml File
-     * @param filePath the path to create file
-     * @param fileName the name of resources file
+     * @param fileName the name of file to load
+     * @param resourceName the resource name of file to recreate
      * @param plugin the plugin this config holder
      */
-    public FileConfig(String filePath, String fileName, JavaPlugin plugin) {
-        this.filePath = filePath;
+    public FileConfig(String fileName, String resourceName, JavaPlugin plugin) {
+        this.fileName = fileName;
         this.plugin = plugin;
-        this.name = fileName;
+        this.resourceName = resourceName;
         loadFile();
         config = new YamlConfiguration();
         try {
