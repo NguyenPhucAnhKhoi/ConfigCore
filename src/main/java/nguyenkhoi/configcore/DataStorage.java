@@ -20,6 +20,7 @@ public class DataStorage {
      * @return the value store in this path
      */
     protected Object get(String path) {
+        if (data.keySet().isEmpty()) return null;
         return data.get(match ? matchString(path, new ArrayList<>(data.keySet())) : path);
     }
 

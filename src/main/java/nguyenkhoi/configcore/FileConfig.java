@@ -193,6 +193,10 @@ public class FileConfig {
         }
     }
 
+    public FileConfig(String fileName, JavaPlugin plugin) {
+        this(fileName, fileName, plugin);
+    }
+
     /**
      * Check if this config contains a path or not
      * @param path the path to check
@@ -230,7 +234,6 @@ public class FileConfig {
      * @return value store in path or default value if it wasn't store
      */
     @Nullable
-    
     public Object get(String path, Object def) {
         return data.get(path) != null ? data.get(path) : def;
     }
@@ -240,7 +243,7 @@ public class FileConfig {
      * @param path the path of value
      * @return value store in path
      */
-    
+    @Nullable
     public Object get(String path) {
         return data.get(path);
     }
