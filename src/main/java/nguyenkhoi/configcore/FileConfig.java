@@ -1,11 +1,8 @@
 package nguyenkhoi.configcore;
 
 import org.bukkit.*;
-import org.bukkit.configuration.*;
 import org.bukkit.configuration.file.*;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.Vector;
 
 import javax.annotation.Nullable;
 import java.io.*;
@@ -15,7 +12,6 @@ import java.util.regex.Pattern;
 
 import static nguyenkhoi.configcore.Util.getVersion;
 import static org.bukkit.ChatColor.COLOR_CHAR;
-import static org.bukkit.util.NumberConversions.*;
 
 @SuppressWarnings("unused")
 public class FileConfig {
@@ -23,6 +19,11 @@ public class FileConfig {
      * The hash map store all data of this class
      */
     private final DataStorage data = new DataStorage();
+
+    /**
+     * The recreate file mode in this class
+     */
+    private boolean recreate;
 
     /**
      * The source yaml file which this class represent
@@ -33,11 +34,6 @@ public class FileConfig {
      * The source file that represent yaml file
      */
     private  File file;
-
-    /**
-     * The path of source file
-     */
-    private final String fileName;
 
     /**
      * List of all paths this config has
@@ -55,10 +51,14 @@ public class FileConfig {
     private final String resourceName;
 
     /**
+     * The path of source file
+     */
+    private String fileName;
+
+    /**
      * Get the Yaml File this class represent
      * @return Yaml File
      */
-    
     public YamlConfiguration getSourceConfig() {
         return config;
     }
@@ -67,7 +67,6 @@ public class FileConfig {
      * Get the Data Storage of this class
      * @return HashMap storage data
      */
-    
     public HashMap<String, Object> getDataStorage() {
         return data.getData();
     }
@@ -76,7 +75,6 @@ public class FileConfig {
      * Get the paths from this config
      * @return List paths
      */
-    
     public List<String> getPaths() {
         return paths;
     }
@@ -85,7 +83,6 @@ public class FileConfig {
      * Get the file represent this storage
      * @return File
      */
-    
     public File getFile() {
         return file;
     }
@@ -102,7 +99,6 @@ public class FileConfig {
      * Get the file path of source file
      * @return File path
      */
-    
     public String getFilePath() {
         return new File(plugin.getDataFolder(), fileName).getPath();
     }
@@ -111,20 +107,34 @@ public class FileConfig {
      * Get the mode of auto match path
      * @return true or false
      */
-
     public boolean isAutoMatch() {
         return data.getAutoMatch();
+    }
+
+    /**
+     * Get the mode of automatic file creator
+     * @return true or false
+     */
+    public boolean isAutoCreate() {
+        return recreate;
     }
 
     /**
      * Set the mode of auto match path
      * @param value true or false
      */
-
     public void setAutoMatch(boolean value) {
         data.setAutoMatch(value);
     }
 
+    /**
+     * Set the mode of auto create
+     * @param value true or false
+     */
+    public void setAutoCreate(boolean value) {
+        this.recreate = value;
+    }
+    
     private static String translateHexColorCodes(String message) {
         final Pattern hexPattern = Pattern.compile("&#" + "([A-Fa-f0-9]{6})" + "");
         Matcher matcher = hexPattern.matcher(message);
@@ -150,18 +160,29 @@ public class FileConfig {
         Bukkit.getConsoleSender().sendMessage(colorize(message));
     }
 
+    private void createFile() {
+        if (recreate) {
+            File folder = plugin.getDataFolder();
+            if (!folder.exists()) {
+                if (folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
+            }
+            if (!file.exists()) {
+                plugin.saveResource(resourceName, false);
+            }
+        }
+    }
+
     /**
      * Load source file for this storage
      */
     private void loadFile() {
         try {
             File folder = plugin.getDataFolder();
-            if (!folder.exists()) {
-                if (folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
-            }
-            file = new File(folder, fileName);
-            if (!file.exists()) {
-                plugin.saveResource(resourceName, false);
+            if (file == null) {
+                createFile();
+                file = new File(folder, fileName);
+            } else {
+                createFile();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -171,20 +192,24 @@ public class FileConfig {
 
     /**
      * Construct this class to represent Yaml File
+     * @param config the bukkit configuration this config will be hold
+     * @param file file to load (null for file name load)
      * @param fileName the name of file to load
      * @param resourceName the resource name of file to recreate
-     * @param plugin the plugin this config holder
+     * @param plugin the plugin this config will be link
+     * @param recreate create the file in load and reload or not
      */
-    public FileConfig(String fileName, String resourceName, JavaPlugin plugin) {
-        this.fileName = fileName;
+    public FileConfig(YamlConfiguration config, File file, String fileName, String resourceName, JavaPlugin plugin, boolean recreate) {
         this.plugin = plugin;
         this.resourceName = resourceName;
+        this.config = config;
+        this.file = file;
         loadFile();
-        config = new YamlConfiguration();
-        try {
-            config.load(file);
-        } catch (Exception ignored) {
-            file = null;
+        if (config == null || config.saveToString().isEmpty()) {
+            config = new YamlConfiguration();
+            try {
+                config.load(file);
+            } catch (Exception ignored) {}
         }
         Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
         paths = new ArrayList<>(set);
@@ -193,38 +218,73 @@ public class FileConfig {
         }
     }
 
-    public FileConfig(String fileName, JavaPlugin plugin) {
-        this(fileName, fileName, plugin);
+    /**
+     * Construct this class to represent Yaml File
+     * Create a FileConfig (with custom auto recreate resource and load from file name)
+     * @param fileName the name of file to load
+     * @param resourceName the resource name of file to recreate
+     * @param plugin the plugin this config will be link
+     * @param recreate create the file in load and reload or not
+     */
+    public FileConfig(String fileName, String resourceName, JavaPlugin plugin, boolean recreate) {
+        this(new YamlConfiguration(), null, fileName, resourceName, plugin, recreate);
     }
 
     /**
-     * Check if this config contains a path or not
-     * @param path the path to check
-     * @return contain or not
+     * Construct this class to represent Yaml File
+     * Create a FileConfig (with custom auto recreate and load from file name)
+     * @param fileName the name of file to load
+     * @param plugin the plugin this config will be link
+     * @param recreate create the file in load and reload or not
      */
-    
-    public boolean contains(String path) {
-        return paths.contains(path);
+    public FileConfig(String fileName, JavaPlugin plugin, boolean recreate) {
+        this(new YamlConfiguration(), null, fileName, fileName, plugin, recreate);
     }
 
     /**
-     * Create the Configuration Section of this config
-     * @param path the path to the section
-     * @return the section
+     * Construct this class to represent Yaml File
+     * Create a FileConfig (with custom auto recreate and load from file)
+     * @param file the file to load
+     * @param recreate create the file in load and reload or not
      */
-    
-    public ConfigurationSection createConfigurationSection(String path) {
-        return config.createSection(path);
+    public FileConfig(File file, boolean recreate) {
+        this(new YamlConfiguration(), file, "", "", null, recreate);
     }
 
     /**
-     * Get the Configuration Section of this config
-     * @param path the path to the section
-     * @return the section
+     * Construct this class to represent Yaml File
+     * Create a FileConfig (with custom auto recreate and load from file)
+     * @param config the bukkit configuration this config will be hold
+     * @param fileName the name of file to load
+     * @param resourceName the resource name of file to recreate
+     * @param plugin the plugin this config will be link
+     * @param recreate create the file in load and reload or not
      */
+    public FileConfig(YamlConfiguration config, String fileName, String resourceName, JavaPlugin plugin, boolean recreate) {
+        this(config, null, fileName, resourceName, plugin, recreate);
+    }
 
-    public ConfigurationSection getConfigurationSection(String path) {
-        return config.getConfigurationSection(path);
+    /**
+     * Construct this class to represent Yaml File
+     * Create a FileConfig (with custom auto recreate and load from file)
+     * @param config the bukkit configuration this config will be hold
+     * @param fileName the name of file to load
+     * @param plugin the plugin this config will be link
+     * @param recreate create the file in load and reload or not
+     */
+    public FileConfig(YamlConfiguration config, String fileName, JavaPlugin plugin, boolean recreate) {
+        this(config, null, fileName, fileName, plugin, recreate);
+    }
+
+    /**
+     * Construct this class to represent Yaml File
+     * Create a FileConfig (with custom auto recreate and load from file)
+     * @param config the bukkit configuration this config will be hold
+     * @param file the file to load
+     * @param recreate create the file in load and reload or not
+     */
+    private FileConfig(YamlConfiguration config, File file, boolean recreate) {
+        this(config, file, "", "", null, recreate);
     }
 
     /**
@@ -247,674 +307,6 @@ public class FileConfig {
     public Object get(String path) {
         return data.get(path);
     }
-
-    /**
-     * Get boolean value store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public boolean getBoolean(String path, Boolean def) {
-        Object var = get(path);
-        return (var instanceof Boolean) ? (Boolean) var : def;
-    }
-
-    /**
-     * Get boolean value store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public boolean getBoolean(String path) {
-        return getBoolean(path, false);
-    }
-
-    /**
-     * Get boolean list value store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<Boolean> getBooleanList(String path) {
-        List<?> list = getList(path);
-        if (list == null) {
-            return new ArrayList<>();
-        }
-        List<Boolean> result = new ArrayList<>();
-        for (Object object : list) {
-            if (object instanceof Boolean) {
-                result.add((Boolean) object);
-            } else if (object instanceof String) {
-                if (Boolean.TRUE.toString().equals(object)) {
-                    result.add(true);
-                } else if (Boolean.FALSE.toString().equals(object)) {
-                    result.add(false);
-                }
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get byte list value store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<Byte> getByteList(String path) {
-        List<?> list = getList(path);
-        if (list == null) {
-            return new ArrayList<>();
-        }
-        List<Byte> result = new ArrayList<>();
-        for (Object object : list) {
-            if (object instanceof Byte) {
-                result.add((Byte) object);
-            } else if (object instanceof String) {
-                try {
-                    result.add(Byte.valueOf((String) object));
-                } catch (Exception ignored) {}
-            } else if (object instanceof Character) {
-                result.add((byte) ((Character) object).charValue());
-            } else if (object instanceof Number) {
-                result.add(((Number) object).byteValue());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get character list value store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<Character> getCharList(String path) {
-        List<?> list = getList(path);
-        if (list == null) {
-            return new ArrayList<>();
-        }
-        List<Character> result = new ArrayList<>();
-        for (Object object : list) {
-            if (object instanceof Character) {
-                result.add((Character) object);
-            } else if (object instanceof String) {
-                String str = (String) object;
-
-                if (str.length() == 1) {
-                    result.add(str.charAt(0));
-                }
-            } else if (object instanceof Number) {
-                result.add((char) ((Number) object).intValue());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get color value store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public Color getColor(String path, Color def) {
-        return data.get(path) instanceof Color ? (Color) data.get(path) : def;
-    }
-
-    /**
-     * Get color value store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    @Nullable
-    
-    public Color getColor(String path) {
-        return getColor(path, null);
-    }
-
-    /**
-     * Get comments store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<String> getComments(String path) {
-        if (getVersion() >= 13) return config.getComments(path);
-        return new ArrayList<>();
-    }
-
-    /**
-     * Get double value store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public Double getDouble(String path, double def) {
-        return data.get(path) instanceof Double ? (Double) data.get(path) : def;
-    }
-
-    /**
-     * Get double value store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public Double getDouble(String path) {
-        Object def = get(path);
-        return getDouble(path, (def instanceof Number) ? toDouble(def) : 0);
-    }
-
-    /**
-     * Get double list value store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<Double> getDoubleList(String path) {
-        List<?> list = getList(path);
-        if (list == null) {
-            return new ArrayList<>();
-        }
-        List<Double> result = new ArrayList<>();
-
-        for (Object object : list) {
-            if (object instanceof Double) {
-                result.add((Double) object);
-            } else if (object instanceof String) {
-                try {
-                    result.add(Double.valueOf((String) object));
-                } catch (Exception ignored) {}
-            } else if (object instanceof Character) {
-                result.add((double) (Character) object);
-            } else if (object instanceof Number) {
-                result.add(((Number) object).doubleValue());
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * Get float list value store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<Float> getFloatList(String path) {
-        List<?> list = getList(path);
-        if (list == null) {
-            return new ArrayList<>();
-        }
-        List<Float> result = new ArrayList<>();
-        for (Object object : list) {
-            if (object instanceof Float) {
-                result.add((Float) object);
-            } else if (object instanceof String) {
-                try {
-                    result.add(Float.valueOf((String) object));
-                } catch (Exception ignored) {}
-            } else if (object instanceof Character) {
-                result.add((float) (Character) object);
-            } else if (object instanceof Number) {
-                result.add(((Number) object).floatValue());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get inline comments store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<String> getInLineComments(String path) {
-        if (getVersion() >= 13) return config.getInlineComments(path);
-        return new ArrayList<>();
-    }
-
-    /**
-     * Get integer value store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public int getInt(String path, int def) {
-        return data.get(path) instanceof Integer ? (Integer) data.get(path) : def;
-    }
-
-    /**
-     * Get integer store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public int getInt(String path) {
-        Object def = get(path);
-        return getInt(path, (def instanceof Number) ? toInt(def) : 0);
-    }
-
-    /**
-     * Get integer list store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<Integer> getIntegerList(String path) {
-        List<?> list = getList(path);
-        if (list == null) {
-            return new ArrayList<>();
-        }
-        List<Integer> result = new ArrayList<>();
-        for (Object object : list) {
-            if (object instanceof Integer) {
-                result.add((Integer) object);
-            } else if (object instanceof String) {
-                try {
-                    result.add(Integer.valueOf((String) object));
-                } catch (Exception ignored) {}
-            } else if (object instanceof Character) {
-                result.add((int) (Character) object);
-            } else if (object instanceof Number) {
-                result.add(((Number) object).intValue());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get item stack value store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public ItemStack getItemStack(String path, ItemStack def) {
-        return data.get(path) instanceof ItemStack ? (ItemStack) data.get(path) : def;
-    }
-
-
-    /**
-     * Get item stack store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    @Nullable
-    
-    public ItemStack getItemStack(String path) {
-        return getItemStack(path, null);
-    }
-
-    /**
-     * Get list store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public List<?> getList(String path, List<?> def) {
-        return data.get(path) instanceof List<?> ? (List<?>) data.get(path) : def;
-    }
-
-    /**
-     * Get list store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    public List<?> getList(String path) {
-        return getList(path, new ArrayList<>());
-    }
-
-    /**
-     * Get location store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public Location getLocation(String path, Location def) {
-        return data.get(path) instanceof Location ? (Location) data.get(path) : def;
-    }
-
-    /**
-     * Get location in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    @Nullable
-    
-    public Location getLocation(String path) {
-        return getLocation(path, null);
-    }
-
-    /**
-     * Get long store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public Long getLong(String path, long def) {
-        return data.get(path) instanceof Location ? (Long) data.get(path) : def;
-    }
-
-    /**
-     * Get long in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public Long getLong(String path) {
-        Object def = get(path);
-        return getLong(path, (def instanceof Number) ? toLong(def) : 0);
-    }
-
-    /**
-     * Get long list store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<Long> getLongList(String path) {
-        List<?> list = getList(path);
-        if (list == null) {
-            return new ArrayList<>();
-        }
-        List<Long> result = new ArrayList<>();
-        for (Object object : list) {
-            if (object instanceof Long) {
-                result.add((Long) object);
-            } else if (object instanceof String) {
-                try {
-                    result.add(Long.valueOf((String) object));
-                } catch (Exception ignored) {}
-            } else if (object instanceof Character) {
-                result.add((long) (Character) object);
-            } else if (object instanceof Number) {
-                result.add(((Number) object).longValue());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get map list store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<Map<?, ?>> getMapList(String path) {
-        List<?> list = getList(path);
-        List<Map<?, ?>> result = new ArrayList<>();
-        if (list == null) {
-            return result;
-        }
-        for (Object object : list) {
-            if (object instanceof Map) {
-                result.add((Map<?, ?>) object);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get request object store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    @Nullable
-    
-    public <T> T getObject(String path, Class<T> type) {
-        Object out = get(path);
-        return (type.isInstance(out)) ? type.cast(out) : null;
-    }
-
-    /**
-     * Get offline player store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public OfflinePlayer getOfflinePlayer(String path, OfflinePlayer def) {
-        return data.get(path) instanceof OfflinePlayer ? (OfflinePlayer) data.get(path) : def;
-    }
-
-    /**
-     * Get offline player store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    @Nullable
-    
-    public OfflinePlayer getOfflinePlayer(String path) {
-        return getOfflinePlayer(path, null);
-    }
-
-    /**
-     * Get short list store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<Short> getShortList(String path) {
-        List<?> list = getList(path);
-        if (list == null) {
-            return new ArrayList<>();
-        }
-        List<Short> result = new ArrayList<>();
-        for (Object object : list) {
-            if (object instanceof Short) {
-                result.add((Short) object);
-            } else if (object instanceof String) {
-                try {
-                    result.add(Short.valueOf((String) object));
-                } catch (Exception ignored) {}
-            } else if (object instanceof Character) {
-                result.add((short) ((Character) object).charValue());
-            } else if (object instanceof Number) {
-                result.add(((Number) object).shortValue());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get string store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public String getString(String path, String def) {
-        return data.get(path) != null ? data.get(path).toString() : def;
-    }
-
-    /**
-     * Get string store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public String getString(String path) {
-        Object def = get(path);
-        return getString(path, def != null ? def.toString() : "");
-    }
-
-    /**
-     * Get string list store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    
-    public List<String> getStringList(String path) {
-        List<?> list = getList(path);
-        if (list == null) {
-            return new ArrayList<>();
-        }
-        List<String> result = new ArrayList<>();
-
-        for (Object object : list) {
-            if (object instanceof String) {
-                result.add(String.valueOf(object));
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get values map store all values in this config
-     * @return map store all values
-     */
-    
-    public Map<String, Object> getValues() {
-        Map<String, Object> map = new HashMap<>();
-        for (String s : getPaths()) {
-            map.put(s, get(s));
-        }
-        return map;
-    }
-
-    /**
-     * Get vector store in this path
-     * @param path the path of value
-     * @param def the default value
-     * @return value store in path or default value if it wasn't store
-     */
-    public Vector getVector(String path, Vector def) {
-        return data.get(path) instanceof Vector ? (Vector) data.get(path) : def;
-    }
-
-    /**
-     * Get vector store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    @Nullable
-    
-    public Vector getVector(String path) {
-        return getVector(path, null);
-    }
-
-    /**
-     * Check if value instance of boolean or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isBoolean(String path) {
-        return data.get(path) instanceof Boolean;
-    }
-
-    /**
-     * Check if value instance of color or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isColor(String path) {
-        return data.get(path) instanceof Color;
-    }
-
-    /**
-     * Check if value instance of double or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isDouble(String path) {
-        return data.get(path) instanceof Double;
-    }
-
-    /**
-     * Check if value instance of int or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isInt(String path) {
-        return data.get(path) instanceof Integer;
-    }
-
-    /**
-     * Check if value instance of item stack or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isItemStack(String path) {
-        return data.get(path) instanceof ItemStack;
-    }
-
-    /**
-     * Check if value instance of list or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isList(String path) {
-        return data.get(path) instanceof List;
-    }
-
-    /**
-     * Check if value instance of location or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isLocation(String path) {
-        return data.get(path) instanceof Location;
-    }
-
-    /**
-     * Check if value instance of long or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isLong(String path) {
-        return data.get(path) instanceof Long;
-    }
-
-    /**
-     * Check if value instance of offline player or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isOfflinePlayer(String path) {
-        return data.get(path) instanceof OfflinePlayer;
-    }
-
-    /**
-     * Check if value was set or not
-     * @param path the path of value
-     * @return value was set or not
-     */
-    
-    public boolean isSet(String path) {
-        return data.get(path) != null;
-    }
-
-    /**
-     * Check if value instance of string or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isString(String path) {
-        return data.get(path) instanceof String;
-    }
-
-    /**
-     * Check if value instance of vector or not
-     * @param path the path of value
-     * @return value instance of type or not
-     */
-    
-    public boolean isVector(String path) {
-        return data.get(path) instanceof Vector;
-    }
-
-    /**
-     * Store the value in this path
-     * @param path the path to save
-     * @param value the value to save
-     */
     
     public void set(String path, Object value) {
         config.set(path, value);
@@ -962,7 +354,6 @@ public class FileConfig {
     /**
      * Save the config file and this storage
      */
-
     public void save() {
         try {
             config.save(file);
