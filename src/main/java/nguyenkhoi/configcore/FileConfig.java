@@ -3,6 +3,7 @@ package nguyenkhoi.configcore;
 import org.bukkit.*;
 import org.bukkit.configuration.file.*;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.io.*;
@@ -14,7 +15,7 @@ import static nguyenkhoi.configcore.Util.getVersion;
 import static org.bukkit.ChatColor.COLOR_CHAR;
 
 @SuppressWarnings("unused")
-public class FileConfig {
+public class FileConfig extends YamlConfiguration {
     /**
      * The hash map store all data of this class
      */
@@ -294,7 +295,7 @@ public class FileConfig {
      * @return value store in path or default value if it wasn't store
      */
     @Nullable
-    public Object get(String path, Object def) {
+    public Object get(@NotNull String path, Object def) {
         return data.get(path) != null ? data.get(path) : def;
     }
 
@@ -304,11 +305,11 @@ public class FileConfig {
      * @return value store in path
      */
     @Nullable
-    public Object get(String path) {
+    public Object get(@NotNull String path) {
         return data.get(path);
     }
     
-    public void set(String path, Object value) {
+    public void set(@NotNull String path, Object value) {
         config.set(path, value);
         data.put(path, value);
     }
@@ -319,7 +320,7 @@ public class FileConfig {
      * @param comments comments string to set
      */
     
-    public void setComments(String path, List<String> comments) {
+    public void setComments(@NotNull String path, List<String> comments) {
         if (getVersion() >= 13) config.setComments(path, comments);
     }
 
@@ -329,7 +330,7 @@ public class FileConfig {
      * @param comments inline comments string to set
      */
     
-    public void setInlineComments(String path, List<String> comments) {
+    public void setInlineComments(@NotNull String path, List<String> comments) {
         if (getVersion() >= 13) config.setComments(path, comments);
     }
 
