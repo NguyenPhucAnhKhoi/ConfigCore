@@ -19,9 +19,7 @@
 ```
 //Create the file config instance
 FileConfig file = new FileConfig("filePath");
-//Set auto match mode for config, auto match
-//means if the path not found it will auto 
-//find the closest path
+//Set auto match mode for config, auto match means if the path not found it will auto find the closest path
 file.setAutoMatch(true);
 //Get an object from path. The string will match with the closest if not found
 Object o = file.get("path");
