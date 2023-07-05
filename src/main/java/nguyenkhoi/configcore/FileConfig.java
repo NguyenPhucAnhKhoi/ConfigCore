@@ -161,13 +161,18 @@ public class FileConfig extends YamlConfiguration {
         Bukkit.getConsoleSender().sendMessage(colorize(message));
     }
 
+    private boolean isFileExist() {
+        if (file == null) return false;
+        else return file.exists();
+    }
+
     private void createFile() {
         if (recreate) {
             File folder = plugin.getDataFolder();
             if (!folder.exists()) {
                 if (folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
             }
-            if (!file.exists() || file == null) {
+            if (isFileExist()) {
                 plugin.saveResource(resourceName, false);
             }
         }
