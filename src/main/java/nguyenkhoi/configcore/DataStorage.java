@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import static nguyenkhoi.configcore.Util.matchString;
 
+@SuppressWarnings("unused")
 public class DataStorage {
     /**
      * Main storage manager

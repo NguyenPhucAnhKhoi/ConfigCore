@@ -3,6 +3,7 @@ package nguyenkhoi.configcore;
 import org.bukkit.Bukkit;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public class Util {
 
     /**
@@ -56,7 +57,6 @@ public class Util {
      * @return the closest string
      */
     public static String matchString(String target, List<String> strings) {
-        boolean e = false;
         boolean i = false;
         int min = getStringDistance(strings.get(0), target);
         String out = strings.get(0);
@@ -64,11 +64,11 @@ public class Util {
             if (s.equals(target)) {
                 return s;
             }
-            else if (s.equalsIgnoreCase(target) && !e) {
+            else if (s.equalsIgnoreCase(target)) {
                 if (diff(s, target) < min) out = s;
                 i = true;
             }
-            else if (getStringDistance(s, target) < min && !i && !e) {
+            else if (getStringDistance(s, target) < min && !i) {
                 min = getStringDistance(s, target);
                 out = s;
             }

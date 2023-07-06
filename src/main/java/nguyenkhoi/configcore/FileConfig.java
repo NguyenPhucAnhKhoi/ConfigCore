@@ -49,12 +49,7 @@ public class FileConfig extends YamlConfiguration {
     /**
      * Name of the resources to load from resources
      */
-    private final String resourceName;
-
-    /**
-     * The path of source file
-     */
-    private final String fileName;
+    private final String resourcePath;
 
     /**
      * Get the Yaml File this class represent
@@ -85,7 +80,7 @@ public class FileConfig extends YamlConfiguration {
      * @return File
      */
     public File getFile() {
-        return file;
+        return new File(plugin.getDataFolder(), resourcePath);
     }
 
     /**
@@ -93,7 +88,7 @@ public class FileConfig extends YamlConfiguration {
      * @return Input stream
      */
     public InputStream getStream() {
-        return this.plugin.getResource(resourceName);
+        return this.plugin.getResource(resourcePath);
     }
 
     /**
@@ -101,7 +96,7 @@ public class FileConfig extends YamlConfiguration {
      * @return File path
      */
     public String getFilePath() {
-        return new File(plugin.getDataFolder(), fileName).getPath();
+        return new File(plugin.getDataFolder(), resourcePath).getPath();
     }
 
     /**
@@ -135,7 +130,13 @@ public class FileConfig extends YamlConfiguration {
     public void setAutoCreate(boolean value) {
         this.recreate = value;
     }
-    
+
+
+    /**
+     * Translate normal string to minecraft hex color message (For 1.16+)
+     * @param message Message to translate
+     * @return Translated hex color message
+     */
     private static String translateHexColorCodes(String message) {
         final Pattern hexPattern = Pattern.compile("&#" + "([A-Fa-f0-9]{6})" + "");
         Matcher matcher = hexPattern.matcher(message);
@@ -149,6 +150,11 @@ public class FileConfig extends YamlConfiguration {
         return matcher.appendTail(buffer).toString();
     }
 
+    /**
+     * Translate normal string to minecraft colorize message
+     * @param input The input string will be translated
+     * @return Translated colorize message
+     */
     private static String colorize(String input) {
         input = ChatColor.translateAlternateColorCodes('&', input);
         if (getVersion() >= 16) {
@@ -157,141 +163,47 @@ public class FileConfig extends YamlConfiguration {
         return input;
     }
 
+    /**
+     * Send the colorize message to the console
+     * @param message Message will be sent
+     */
     private void log(String message) {
         Bukkit.getConsoleSender().sendMessage(colorize(message));
-    }
-
-    private boolean isFileExist() {
-        if (file == null) return false;
-        else return file.exists();
-    }
-
-    private void createFile() {
-        File folder = plugin.getDataFolder();
-        if (!folder.exists()) {
-            if (!folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
-        }
-        log ("&a" + isFileExist());
-        if (!isFileExist()) {
-            log("&aCreating file for plugin");
-            plugin.saveResource(resourceName, false);
-        }
     }
 
     /**
      * Load source file for this storage
      */
     private void loadFile(boolean reload) {
-        try {
-            File folder = plugin.getDataFolder();
-            if (file == null) {
-                if (recreate || !reload) createFile();
-                file = new File(folder, fileName);
-            } else {
-                if (recreate || !reload) createFile();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            file = null;
+        File folder = plugin.getDataFolder();
+        if (!folder.exists()) {
+            if (!folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
+        }
+        File file = new File(folder, resourcePath);
+        if (!file.exists()) {
+            plugin.saveResource(resourcePath, true);
         }
     }
 
     /**
      * Construct this class to represent Yaml File
-     * @param config the bukkit configuration this config will be hold
-     * @param file file to load (null for file name load)
-     * @param fileName the name of file to load
-     * @param resourceName the resource name of file to recreate
+     * @param resourcePath the resource name of file to recreate
      * @param plugin the plugin this config will be link
      * @param recreate create the file in load and reload or not
      */
-    public FileConfig(YamlConfiguration config, File file, String fileName, String resourceName, JavaPlugin plugin, boolean recreate) {
+    public FileConfig(String resourcePath, JavaPlugin plugin, boolean recreate) {
         this.plugin = plugin;
-        this.resourceName = resourceName;
-        this.config = config;
-        this.file = file;
-        this.fileName = fileName;
+        this.resourcePath = resourcePath;
+        this.config = new YamlConfiguration();
         loadFile(false);
-        if (config == null || config.saveToString().isEmpty()) {
-            config = new YamlConfiguration();
-            try {
-                config.load(file);
-            } catch (Exception ignored) {}
-        }
+        try {
+            config.load(file);
+        } catch (Exception ignored) {}
         Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
         paths = new ArrayList<>(set);
         for (String s : paths) {
             data.put(s, config.get(s));
         }
-    }
-
-    /**
-     * Construct this class to represent Yaml File
-     * Create a FileConfig (with custom auto recreate resource and load from file name)
-     * @param fileName the name of file to load
-     * @param resourceName the resource name of file to recreate
-     * @param plugin the plugin this config will be link
-     * @param recreate create the file in load and reload or not
-     */
-    public FileConfig(String fileName, String resourceName, JavaPlugin plugin, boolean recreate) {
-        this(new YamlConfiguration(), null, fileName, resourceName, plugin, recreate);
-    }
-
-    /**
-     * Construct this class to represent Yaml File
-     * Create a FileConfig (with custom auto recreate and load from file name)
-     * @param fileName the name of file to load
-     * @param plugin the plugin this config will be link
-     * @param recreate create the file in load and reload or not
-     */
-    public FileConfig(String fileName, JavaPlugin plugin, boolean recreate) {
-        this(new YamlConfiguration(), null, fileName, fileName, plugin, recreate);
-    }
-
-    /**
-     * Construct this class to represent Yaml File
-     * Create a FileConfig (with custom auto recreate and load from file)
-     * @param file the file to load
-     * @param recreate create the file in load and reload or not
-     */
-    public FileConfig(File file, boolean recreate) {
-        this(new YamlConfiguration(), file, "", "", null, recreate);
-    }
-
-    /**
-     * Construct this class to represent Yaml File
-     * Create a FileConfig (with custom auto recreate and load from file)
-     * @param config the bukkit configuration this config will be hold
-     * @param fileName the name of file to load
-     * @param resourceName the resource name of file to recreate
-     * @param plugin the plugin this config will be link
-     * @param recreate create the file in load and reload or not
-     */
-    public FileConfig(YamlConfiguration config, String fileName, String resourceName, JavaPlugin plugin, boolean recreate) {
-        this(config, null, fileName, resourceName, plugin, recreate);
-    }
-
-    /**
-     * Construct this class to represent Yaml File
-     * Create a FileConfig (with custom auto recreate and load from file)
-     * @param config the bukkit configuration this config will be hold
-     * @param fileName the name of file to load
-     * @param plugin the plugin this config will be link
-     * @param recreate create the file in load and reload or not
-     */
-    public FileConfig(YamlConfiguration config, String fileName, JavaPlugin plugin, boolean recreate) {
-        this(config, null, fileName, fileName, plugin, recreate);
-    }
-
-    /**
-     * Construct this class to represent Yaml File
-     * Create a FileConfig (with custom auto recreate and load from file)
-     * @param config the bukkit configuration this config will be hold
-     * @param file the file to load
-     * @param recreate create the file in load and reload or not
-     */
-    private FileConfig(YamlConfiguration config, File file, boolean recreate) {
-        this(config, file, "", "", null, recreate);
     }
 
     /**
@@ -314,36 +226,20 @@ public class FileConfig extends YamlConfiguration {
     public Object get(@NotNull String path) {
         return data.get(path);
     }
-    
+
+    /**
+     * Set object value store in this path
+     * @param path the path of value
+     * @param value value to store in path
+     */
     public void set(@NotNull String path, Object value) {
         config.set(path, value);
         data.put(path, value);
     }
 
     /**
-     * Set the comments for this config
-     * @param path the path to set
-     * @param comments comments string to set
-     */
-    
-    public void setComments(@NotNull String path, List<String> comments) {
-        if (getVersion() >= 13) config.setComments(path, comments);
-    }
-
-    /**
-     * Set the inline comments for this config
-     * @param path the path to set
-     * @param comments inline comments string to set
-     */
-    
-    public void setInlineComments(@NotNull String path, List<String> comments) {
-        if (getVersion() >= 13) config.setComments(path, comments);
-    }
-
-    /**
      * Reload the config file and this storage
      */
-    
     public void reload() {
         loadFile(true);
         config = new YamlConfiguration();
