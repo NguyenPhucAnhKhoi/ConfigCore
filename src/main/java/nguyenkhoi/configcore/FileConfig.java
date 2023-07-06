@@ -54,7 +54,7 @@ public class FileConfig extends YamlConfiguration {
     /**
      * The path of source file
      */
-    private String fileName;
+    private final String fileName;
 
     /**
      * Get the Yaml File this class represent
@@ -167,30 +167,28 @@ public class FileConfig extends YamlConfiguration {
     }
 
     private void createFile() {
-        if (recreate) {
-            File folder = plugin.getDataFolder();
-            if (!folder.exists()) {
-                if (!folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
-            }
-            log ("&a" + isFileExist());
-            if (!isFileExist()) {
-                log("&aCreating file for plugin");
-                plugin.saveResource(resourceName, false);
-            }
+        File folder = plugin.getDataFolder();
+        if (!folder.exists()) {
+            if (!folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
+        }
+        log ("&a" + isFileExist());
+        if (!isFileExist()) {
+            log("&aCreating file for plugin");
+            plugin.saveResource(resourceName, false);
         }
     }
 
     /**
      * Load source file for this storage
      */
-    private void loadFile() {
+    private void loadFile(boolean reload) {
         try {
             File folder = plugin.getDataFolder();
             if (file == null) {
-                createFile();
+                if (recreate || !reload) createFile();
                 file = new File(folder, fileName);
             } else {
-                createFile();
+                if (recreate || !reload) createFile();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -213,7 +211,7 @@ public class FileConfig extends YamlConfiguration {
         this.config = config;
         this.file = file;
         this.fileName = fileName;
-        loadFile();
+        loadFile(false);
         if (config == null || config.saveToString().isEmpty()) {
             config = new YamlConfiguration();
             try {
@@ -347,7 +345,7 @@ public class FileConfig extends YamlConfiguration {
      */
     
     public void reload() {
-        loadFile();
+        loadFile(true);
         config = new YamlConfiguration();
         try {
             config.load(file);
