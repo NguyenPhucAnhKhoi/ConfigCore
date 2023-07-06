@@ -170,9 +170,10 @@ public class FileConfig extends YamlConfiguration {
         if (recreate) {
             File folder = plugin.getDataFolder();
             if (!folder.exists()) {
-                if (folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
+                if (!folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
             }
             if (!isFileExist()) {
+                log("&cCreating plugin files");
                 plugin.saveResource(resourceName, false);
             }
         }
