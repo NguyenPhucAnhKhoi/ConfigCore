@@ -17,7 +17,14 @@ import static org.bukkit.ChatColor.COLOR_CHAR;
 
 @SuppressWarnings("unused")
 public class FileConfig extends YamlConfiguration {
+    /**
+     * The auto match status True or False
+     */
     private boolean autoMatch;
+
+    /**
+     * The match mode IGNORE_CASE or NEAREST
+     */
     private MatchMode matchMode;
 
     /**
