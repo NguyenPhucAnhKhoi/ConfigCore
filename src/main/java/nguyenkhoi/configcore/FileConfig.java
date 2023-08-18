@@ -1,6 +1,7 @@
 package nguyenkhoi.configcore;
 
 import org.bukkit.*;
+import org.bukkit.configuration.MemorySection;
 import org.bukkit.configuration.file.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -189,6 +190,9 @@ public class FileConfig extends YamlConfiguration {
         } catch (Exception ignored) {}
         Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
         paths.addAll(set);
+        for (String s : set) {
+            Bukkit.broadcastMessage(s);
+        }
     }
 
     /**
@@ -229,6 +233,7 @@ public class FileConfig extends YamlConfiguration {
     @Nullable
     public Object get(@NotNull String path, Object def) {
         String finalPath = autoMatch ? matchString(path, paths, matchMode) : path;
+        Bukkit.broadcastMessage(finalPath);
         return config.get(finalPath, def);
     }
 
