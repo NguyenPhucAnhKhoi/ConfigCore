@@ -187,7 +187,9 @@ public class FileConfig extends YamlConfiguration {
         loadFile();
         try {
             config.load(file);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
         paths.addAll(set);
         for (String s : set) {
