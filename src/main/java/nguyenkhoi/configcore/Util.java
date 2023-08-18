@@ -42,6 +42,12 @@ public class Util {
         return min;
     }
 
+    /**
+     * Get the different point of 2 strings
+     * @param string The string to compare
+     * @param target The target string to compare
+     * @return The different point after compare 2 given strings
+     */
     protected static int diff(String string, String target) {
         int out = 0;
         for (int i = 0; i < i + string.length(); i++) {
@@ -56,24 +62,31 @@ public class Util {
      * @param strings the list string to find
      * @return the closest string
      */
-    public static String matchString(String target, List<String> strings) {
-        boolean i = false;
-        int min = getStringDistance(strings.get(0), target);
-        String out = strings.get(0);
-        for (String s : strings) {
-            if (s.equals(target)) {
-                return s;
+    public static String matchString(String target, List<String> strings, MatchMode mode) {
+        if (mode == MatchMode.NEAREST) {
+            boolean i = false;
+            int min = getStringDistance(strings.get(0), target);
+            String out = strings.get(0);
+            for (String s : strings) {
+                if (s.equals(target)) {
+                    return s;
+                }
+                else if (s.equalsIgnoreCase(target)) {
+                    if (diff(s, target) < min) out = s;
+                    i = true;
+                }
+                else if (getStringDistance(s, target) < min && !i) {
+                    min = getStringDistance(s, target);
+                    out = s;
+                }
             }
-            else if (s.equalsIgnoreCase(target)) {
-                if (diff(s, target) < min) out = s;
-                i = true;
-            }
-            else if (getStringDistance(s, target) < min && !i) {
-                min = getStringDistance(s, target);
-                out = s;
+            return out;
+        } else {
+            for (String s : strings) {
+                if (s.equalsIgnoreCase(target)) return s;
             }
         }
-        return out;
+        return target;
     }
 
     /**

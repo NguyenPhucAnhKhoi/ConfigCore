@@ -12,19 +12,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static nguyenkhoi.configcore.Util.getVersion;
+import static nguyenkhoi.configcore.Util.matchString;
 import static org.bukkit.ChatColor.COLOR_CHAR;
 
 @SuppressWarnings("unused")
 public class FileConfig extends YamlConfiguration {
-    /**
-     * The hash map store all data of this class
-     */
-    private final DataStorage data = new DataStorage();
-
-    /**
-     * The recreate file mode in this class
-     */
-    private boolean recreate;
+    private boolean autoMatch;
+    private MatchMode matchMode;
 
     /**
      * The source yaml file which this class represent
@@ -39,7 +33,7 @@ public class FileConfig extends YamlConfiguration {
     /**
      * List of all paths this config has
      */
-    private List<String> paths;
+    private final List<String> paths = new ArrayList<>();
 
     /**
      * Plugin this config holder to create file
@@ -57,14 +51,6 @@ public class FileConfig extends YamlConfiguration {
      */
     public YamlConfiguration getSourceConfig() {
         return config;
-    }
-
-    /**
-     * Get the Data Storage of this class
-     * @return HashMap storage data
-     */
-    public HashMap<String, Object> getDataStorage() {
-        return data.getData();
     }
 
     /**
@@ -100,37 +86,36 @@ public class FileConfig extends YamlConfiguration {
     }
 
     /**
-     * Get the mode of auto match path
+     * Get the match mode for get path
+     * @return IGNORE_CASE or NEAREST
+     */
+    public MatchMode getMatchMode() {
+        return matchMode;
+    }
+
+    /**
+     * Get the status of auto match path
      * @return true or false
      */
     public boolean isAutoMatch() {
-        return data.getAutoMatch();
+        return autoMatch;
     }
 
     /**
-     * Get the mode of automatic file creator
-     * @return true or false
+     * Set the match mode of auto match path
+     * @param value IGNORE_CASE or NEAREST
      */
-    public boolean isAutoCreate() {
-        return recreate;
+    public void setMatchMode(MatchMode value) {
+        matchMode = value;
     }
 
     /**
-     * Set the mode of auto match path
+     * Set the status of auto match path
      * @param value true or false
      */
     public void setAutoMatch(boolean value) {
-        data.setAutoMatch(value);
+        autoMatch = value;
     }
-
-    /**
-     * Set the mode of auto create
-     * @param value true or false
-     */
-    public void setAutoCreate(boolean value) {
-        this.recreate = value;
-    }
-
 
     /**
      * Translate normal string to minecraft hex color message (For 1.16+)
@@ -174,7 +159,7 @@ public class FileConfig extends YamlConfiguration {
     /**
      * Load source file for this storage
      */
-    private void loadFile(boolean reload) {
+    private void loadFile() {
         File folder = plugin.getDataFolder();
         if (!folder.exists()) {
             if (!folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
@@ -189,21 +174,50 @@ public class FileConfig extends YamlConfiguration {
      * Construct this class to represent Yaml File
      * @param resourcePath the resource name of file to recreate
      * @param plugin the plugin this config will be link
-     * @param recreate create the file in load and reload or not
+     * @param autoMatch auto match path for or not
+     * @param mode the mode for auto match
      */
-    public FileConfig(String resourcePath, JavaPlugin plugin, boolean recreate) {
+    public FileConfig(String resourcePath, JavaPlugin plugin, boolean autoMatch, MatchMode mode) {
         this.plugin = plugin;
         this.resourcePath = resourcePath;
         this.config = new YamlConfiguration();
-        loadFile(false);
+        this.autoMatch = autoMatch;
+        this.matchMode = mode;
+        loadFile();
         try {
             config.load(file);
         } catch (Exception ignored) {}
         Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
-        paths = new ArrayList<>(set);
-        for (String s : paths) {
-            data.put(s, config.get(s));
-        }
+        paths.addAll(set);
+    }
+
+    /**
+     * Construct this class to represent Yaml File
+     * @param resourcePath the resource name of file to recreate
+     * @param plugin the plugin this config will be link
+     * @param autoMatch auto match path for or not
+     */
+    public FileConfig(String resourcePath, JavaPlugin plugin, boolean autoMatch) {
+        this(resourcePath, plugin, autoMatch, MatchMode.IGNORE_CASE);
+    }
+
+    /**
+     * Construct this class to represent Yaml File
+     * @param resourcePath the resource name of file to recreate
+     * @param plugin the plugin this config will be link
+     * @param mode the mode for auto match
+     */
+    public FileConfig(String resourcePath, JavaPlugin plugin, MatchMode mode) {
+        this(resourcePath, plugin, true, mode);
+    }
+
+    /**
+     * Construct this class to represent Yaml File
+     * @param resourcePath the resource name of file to recreate
+     * @param plugin the plugin this config will be link
+     */
+    public FileConfig(String resourcePath, JavaPlugin plugin) {
+        this(resourcePath, plugin, true, MatchMode.IGNORE_CASE);
     }
 
     /**
@@ -214,44 +228,22 @@ public class FileConfig extends YamlConfiguration {
      */
     @Nullable
     public Object get(@NotNull String path, Object def) {
-        return data.get(path) != null ? data.get(path) : def;
-    }
-
-    /**
-     * Get object value store in this path
-     * @param path the path of value
-     * @return value store in path
-     */
-    @Nullable
-    public Object get(@NotNull String path) {
-        return data.get(path);
-    }
-
-    /**
-     * Set object value store in this path
-     * @param path the path of value
-     * @param value value to store in path
-     */
-    public void set(@NotNull String path, Object value) {
-        config.set(path, value);
-        data.put(path, value);
+        String finalPath = autoMatch ? matchString(path, paths, matchMode) : path;
+        return config.get(finalPath, def);
     }
 
     /**
      * Reload the config file and this storage
      */
     public void reload() {
-        loadFile(true);
+        loadFile();
         config = new YamlConfiguration();
         try {
             config.load(file);
         } catch (Exception ignored) {}
         Set<String> set = Objects.requireNonNull(config.getConfigurationSection("")).getKeys(true);
-        paths = new ArrayList<>(set);
-        data.clear();
-        for (String s : paths) {
-            data.put(s, config.get(s));
-        }
+        paths.clear();
+        paths.addAll(set);
     }
 
     /**
