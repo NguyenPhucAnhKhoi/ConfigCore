@@ -8,12 +8,8 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.io.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static nguyenkhoi.configcore.Util.getVersion;
 import static nguyenkhoi.configcore.Util.matchString;
-import static org.bukkit.ChatColor.COLOR_CHAR;
 
 @SuppressWarnings("unused")
 public class FileConfig extends YamlConfiguration {
@@ -125,42 +121,11 @@ public class FileConfig extends YamlConfiguration {
     }
 
     /**
-     * Translate normal string to minecraft hex color message (For 1.16+)
-     * @param message Message to translate
-     * @return Translated hex color message
-     */
-    private static String translateHexColorCodes(String message) {
-        final Pattern hexPattern = Pattern.compile("&#" + "([A-Fa-f0-9]{6})" + "");
-        Matcher matcher = hexPattern.matcher(message);
-        StringBuffer buffer = new StringBuffer(message.length() + 4 * 8);
-        while (matcher.find()) {
-            String group = matcher.group(1);
-            matcher.appendReplacement(buffer, COLOR_CHAR + "x" + COLOR_CHAR + group.charAt(0) + COLOR_CHAR + group.charAt(1) + COLOR_CHAR
-                    + group.charAt(2) + COLOR_CHAR + group.charAt(3) + COLOR_CHAR + group.charAt(4) + COLOR_CHAR + group.charAt(5));
-
-        }
-        return matcher.appendTail(buffer).toString();
-    }
-
-    /**
-     * Translate normal string to minecraft colorize message
-     * @param input The input string will be translated
-     * @return Translated colorize message
-     */
-    private static String colorize(String input) {
-        input = ChatColor.translateAlternateColorCodes('&', input);
-        if (getVersion() >= 16) {
-            input = translateHexColorCodes(input);
-        }
-        return input;
-    }
-
-    /**
      * Send the colorize message to the console
      * @param message Message will be sent
      */
     private void log(String message) {
-        Bukkit.getConsoleSender().sendMessage(colorize(message));
+        Bukkit.getConsoleSender().sendMessage(message);
     }
 
     /**
@@ -169,7 +134,7 @@ public class FileConfig extends YamlConfiguration {
     private void loadFile() {
         File folder = plugin.getDataFolder();
         if (!folder.exists()) {
-            if (!folder.mkdirs()) log("&cCan not create the config parent folder for plugin &e" + plugin.getName());
+            if (!folder.mkdirs()) log("§cCan not create the config parent folder for plugin &e" + plugin.getName());
         }
         file = new File(folder, resourcePath);
         if (!file.exists()) {
